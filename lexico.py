@@ -1,4 +1,5 @@
 from ply.lex import lex
+import sys
 
 # Lista de tokens
 tokens = (
@@ -52,18 +53,52 @@ def t_error(t):
 # Construcción del analizador léxico
 lexer = lex()
 
-# Prueba de entrada
-code = """int x = 5;
-if (x > 0) {
-    while (x > 0) {
-        x = x - 1;
-    }
-}
-char letra = 'a';"
-"""
-lexer.input(code)
+def ingreso_datos():
+    global code
+    print("\t--- Ingreso de texto en el editor ---")
+    code = input("Ingrese el código a analizar:\n")
 
-# Imprimir los tokens reconocidos
-for tok in lexer:
-    print(tok)
-# 
+def lexico():
+    print("\t--- Análisis léxico ---")
+    lexer.input(code)
+    for tok in lexer:
+        print(tok)
+
+def sintactico():
+    print("\t--- Análisis sintáctico en árbol ---")
+    #Codigo analizador sintáctico
+
+def tabla_simbolos():
+    print("\t--- Tabla de símbolos ---")
+    #Codigo tabla de símbolos
+
+def salir():
+    print("\t--- Feliz Día ---")
+    print("--------------------------------------------------")
+    exit()
+
+opciones = {
+    "1": ingreso_datos,
+    "2": lexico,
+    "3": sintactico,
+    "4": tabla_simbolos,
+    "5": salir
+}
+
+code = ""
+
+if __name__ == "__main__":
+    while True:
+        print("\n--- MENU PRINCIPAL ---")
+        print("1. Ingreso de texto en el editor")
+        print("2. Análisis léxico")
+        print("3. Análisis sintáctico en árbol")
+        print("4. Tabla de símbolos")
+        print("5. Salir")
+
+        opcion = input("Escoja una de las siguientes opciones ---> ")
+
+        if opcion in opciones:
+            opciones[opcion]()
+        else:
+            print("Opción incorrecta, por favor intente nuevamente.")
