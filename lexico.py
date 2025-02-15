@@ -55,20 +55,34 @@ lexer = lex()
 
 def ingreso_datos():
     global code
+    print("--------------------------------------------------")
     print("\t--- Ingreso de texto en el editor ---")
-    code = input("Ingrese el código a analizar:\n")
+    lines = []
+    while True:
+        line = input()
+        if line.lower() == "exit":
+            break
+        lines.append(line)
+    code = "\n".join(lines)
+    print("--------------------------------------------------")
+    print("Código ingresado para análisis:\n", code)
+    print("--------------------------------------------------")
 
 def lexico():
+    print("--------------------------------------------------")
     print("\t--- Análisis léxico ---")
     lexer.input(code)
     for tok in lexer:
         print(tok)
+    print("--------------------------------------------------")
 
 def sintactico():
+    print("--------------------------------------------------")
     print("\t--- Análisis sintáctico en árbol ---")
     #Codigo analizador sintáctico
 
 def tabla_simbolos():
+    print("--------------------------------------------------")
     print("\t--- Tabla de símbolos ---")
     #Codigo tabla de símbolos
 
