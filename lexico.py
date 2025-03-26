@@ -5,6 +5,7 @@ import os
 
 # Tabla de símbolos
 tabla_simbolos = {}
+id_contador = 1  # Contador para asignar IDs únicos
 
 # Lista de tokens
 tokens = (
@@ -97,18 +98,56 @@ def p_declaraciones(p):
 def p_declaracion(p):
     '''declaracion : INT VAR PYC
                    | CHAR VAR PYC'''
-    print(f"Declaración de variable: {p[2]} (tipo {p[1]})")
+    global id_contador
+    if p[2] not in tabla_simbolos:
+            tabla_simbolos[p[2]] = {"id": id_contador, "tipo": p[1], "valor": None}
+            id_contador += 1
+    print(f"Declaración de variable: {p[2]} (tipo {p[1]}, ID {tabla_simbolos[p[2]]['id']})")
     p[0] = Node("DECLARACION", value=f"{p[1]} {p[2]}")
-    tabla_simbolos[p[2]] = {"tipo": p[1], "valor": None}
+
+#---------------------------------------
+def evaluar_expresion(node):
+    """Evalúa una expresión aritmética o variable y devuelve su valor."""
+    if node.type == "NUM":
+        return int(node.value)  # Asegurar conversión a número
+    elif node.type == "VAR":
+        if node.value in tabla_simbolos and tabla_simbolos[node.value]["valor"] is not None:
+            return tabla_simbolos[node.value]["valor"]
+        else:
+            print(f"Error: La variable '{node.value}' no tiene un valor asignado.")
+            return None
+    elif node.type in ["+", "-", "*", "/"]:
+        left = evaluar_expresion(node.children[0])
+        right = evaluar_expresion(node.children[1])
+        if left is not None and right is not None:
+            if node.type == "+":
+                return left + right
+            elif node.type == "-":
+                return left - right
+            elif node.type == "*":
+                return left * right
+            elif node.type == "/":
+                return left / right if right != 0 else None
+    return None
+
+
+#----------------------------------------
 
 def p_asignacion(p):
     'asignacion : VAR IGUAL expresion PYC'
-    print(f"Asignación: {p[1]} = {p[3].value if hasattr(p[3], 'value') else 'expresión'}")
+    valor = evaluar_expresion(p[3])
+
+    if valor is not None:
+        print(f"Asignación: {p[1]} = {valor}")
+        # Actualizar o insertar en la tabla de símbolos
+        if p[1] in tabla_simbolos:
+            tabla_simbolos[p[1]]["valor"] = valor
+        else:
+            tabla_simbolos[p[1]] = {"tipo": "desconocido", "valor": valor}
+
     p[0] = Node("ASIGNACION", [Node("VAR", value=p[1]), p[3]])
-    if p[1] in tabla_simbolos:
-        tabla_simbolos[p[1]]["valor"] = p[3].value if hasattr(p[3], 'value') else None
-    else:
-        print(f"Error: la variable '{p[1]}' no ha sido declarada.")
+
+
 
 def p_if_else_statement(p):
     'if_statement : IF PAR_L expresion PAR_R bloque ELSE bloque'
@@ -119,6 +158,9 @@ def p_while_statement(p):
     'while_statement : WHILE PAR_L expresion PAR_R bloque'
     print(f"Estructura while: {p[3].value if hasattr(p[3], 'value') else 'expresión'}")
     p[0] = Node("WHILE", [p[3], p[5]])
+
+
+
 
 def p_bloque(p):
     'bloque : LLAVE_L declaraciones LLAVE_R'
@@ -187,24 +229,23 @@ def mostrar_tabla_simbolos():
     if not tabla_simbolos:
         print("\n La tabla de símbolos está vacía.")
         return
-
     print("\n--- Tabla de Símbolos ---")
-    print("{:<10} {:<10} {:<10}".format("VARIABLE", "TIPO", "VALOR"))
-    print("-" * 30)
-    
+    print("{:<5} {:<10} {:<10} {:<10}".format("ID", "VARIABLE", "TIPO", "VALOR"))
+    print("-" * 40)
     for var, info in tabla_simbolos.items():
+        id_var = info["id"]
         tipo = info["tipo"]
         valor = info["valor"] if info["valor"] is not None else "N/A"
-        print("{:<10} {:<10} {:<10}".format(var, tipo, valor))
+        print("{:<5} {:<10} {:<10} {:<10}".format(id_var, var, tipo, valor))
+    print("-" * 40)
 
-    print("-" * 30)
 
 
 # ---------------------- FUNCIONES DEL MENÚ ----------------------
 def ingreso_datos():
-    global code
     print("--------------------------------------------------")
     print("\t--- Ingreso de texto en el editor ---")
+    global code
     lines = []
     while True:
         line = input()
@@ -226,15 +267,26 @@ def lexico():
 
 def sintactico():
     print("--------------------------------------------------")
-    print("\t--- Análisis sintáctico ---")
+    print("\t--- Análisis sintáctico en árbol ---")
     try:
-        prueba_sintactica(code)  # Función que genera el árbol
+        prueba_sintactica(code)  # Función que genera el árbol sintáctico
         print("Análisis sintáctico exitoso.")
-        mostrar_tabla_simbolos()  #tabla de símbolos 
     except Exception as e:
         print(f"Error de sintaxis: {e}")
     print("--------------------------------------------------")
 
+
+def analizador_semantico():
+    print("--------------------------------------------------")
+    print("\t--- Analizador Semántico ---")
+   # ejecutar_analizador_semantico(code)  # Función que analiza semánticamente el código
+    print("--------------------------------------------------")
+
+def codigo_intermedio():
+    print("--------------------------------------------------")
+    print("\t--- Código Intermedio ---")
+    #generar_codigo_intermedio(code)  # Función que genera código intermedio
+    print("--------------------------------------------------")
 
 def salir():
     print("\t--- Feliz Día ---")
@@ -245,7 +297,10 @@ opciones = {
     "1": ingreso_datos,
     "2": lexico,
     "3": sintactico,
-    "4": salir
+    "4": mostrar_tabla_simbolos,
+    "5": analizador_semantico,
+    "6": codigo_intermedio,
+    "7": salir
 }
 
 code = ""
@@ -253,10 +308,13 @@ code = ""
 if __name__ == "__main__":
     while True:
         print("\n--- MENU PRINCIPAL ---")
-        print("1. Ingreso de código")
+        print("1. Ingreso de texto en el editor")
         print("2. Análisis léxico")
-        print("3. Análisis sintáctico y tabla de símbolos")
-        print("4. Salir")
+        print("3. Análisis sintáctico en árbol")
+        print("4. Tabla de símbolos")
+        print("5. Analizador Semántico")
+        print("6. Código intermedio")
+        print("7. Salir")
 
         opcion = input("Escoja una opción: ")
         if opcion in opciones:
