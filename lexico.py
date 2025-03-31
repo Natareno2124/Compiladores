@@ -2,6 +2,8 @@ from ply.lex import lex
 import ply.yacc as yacc
 import graphviz
 import os
+from graphviz import Digraph
+import re
 
 # Tabla de símbolos
 tabla_simbolos = {}
@@ -106,27 +108,27 @@ def p_declaracion(p):
     p[0] = Node("DECLARACION", value=f"{p[1]} {p[2]}")
 
 #---------------------------------------
-def evaluar_expresion(node):
-    """Evalúa una expresión aritmética o variable y devuelve su valor."""
-    if node.type == "NUM":
-        return int(node.value)  # Asegurar conversión a número
-    elif node.type == "VAR":
-        if node.value in tabla_simbolos and tabla_simbolos[node.value]["valor"] is not None:
-            return tabla_simbolos[node.value]["valor"]
+def evaluar_expresion(nodo, contexto):
+    if nodo.type == "NUM":
+        return int(nodo.value)
+    elif nodo.type == "VAR":
+        # Se asume que 'nodo.value' es el nombre de la variable.
+        if nodo.value in contexto and contexto[nodo.value]["valor"] is not None:
+            return contexto[nodo.value]["valor"]
         else:
-            print(f"Error: La variable '{node.value}' no tiene un valor asignado.")
+            print(f"Error: La variable '{nodo.value}' no tiene un valor asignado.")
             return None
-    elif node.type in ["+", "-", "*", "/"]:
-        left = evaluar_expresion(node.children[0])
-        right = evaluar_expresion(node.children[1])
+    elif nodo.type in ["+", "-", "*", "/"]:
+        left = evaluar_expresion(nodo.children[0], contexto)
+        right = evaluar_expresion(nodo.children[1], contexto)
         if left is not None and right is not None:
-            if node.type == "+":
+            if nodo.type == "+":
                 return left + right
-            elif node.type == "-":
+            elif nodo.type == "-":
                 return left - right
-            elif node.type == "*":
+            elif nodo.type == "*":
                 return left * right
-            elif node.type == "/":
+            elif nodo.type == "/":
                 return left / right if right != 0 else None
     return None
 
@@ -135,7 +137,7 @@ def evaluar_expresion(node):
 
 def p_asignacion(p):
     'asignacion : VAR IGUAL expresion PYC'
-    valor = evaluar_expresion(p[3])
+    valor = evaluar_expresion(p[3], tabla_simbolos)
 
     if valor is not None:
         print(f"Asignación: {p[1]} = {valor}")
@@ -240,6 +242,94 @@ def mostrar_tabla_simbolos():
     print("-" * 40)
 
 
+#---------------------------SEMANTICO------------------------------------------------
+def decorar_nodo(original, contexto):
+
+    # Caso 1: Declaración (se espera que original.value sea "int x" o "char y")
+    if original.type == "DECLARACION":
+        tokens = original.value.split()
+        if len(tokens) == 2:
+            tipo, var_name = tokens
+            if var_name not in tabla_simbolos:
+                tabla_simbolos[var_name] = {"tipo": tipo, "valor": None}
+            else:
+                print(f"Advertencia: La variable '{var_name}' ya ha sido declarada.")
+            new_node = Node("VAR_DECL", value=f"{tipo} = {var_name}")
+            tipo_node = Node("TIPO", value=tipo)
+            id_node = Node("ID", value=var_name)
+            new_node.children = [tipo_node, id_node]
+        else:
+            new_node = Node(original.type, value=original.value)
+    
+    # Caso 2: Asignación (se espera que original.children[0] sea una variable y la expresión)
+    elif original.type == "ASIGNACION":
+        var_node = original.children[0]  
+        var_name = var_node.value
+        if var_name not in tabla_simbolos:
+            print(f"Error semántico: La variable '{var_name}' no ha sido declarada.")
+            new_node = Node("ASIGNACION", value=f"{var_name} = Error")
+        else:
+            valor = evaluar_expresion(original.children[1], contexto)
+            tabla_simbolos[var_name]["valor"] = valor
+            tipo = tabla_simbolos[var_name]["tipo"]
+            new_node = Node("ASIGNACION", value=f"{var_name} = {valor}")
+            tipo_node = Node("TIPO", value=tipo)
+            id_node = Node("ID", value=var_name)
+            if valor is not None:
+                valor_node = Node("VALOR", value=valor)
+                id_node.children = [valor_node]
+            new_node.children = [tipo_node, id_node]
+    
+    # Caso 3: Uso de variable en una expresión
+    elif original.type == "VAR":
+        var_name = original.value
+        if var_name not in tabla_simbolos:
+            print(f"Error semántico: Uso de variable '{var_name}' sin declarar.")
+            new_node = Node("VAR", value=f"{var_name} (no declarada)")
+            tipo_node = Node("TIPO", value="Desconocido")
+            valor_node = Node("VALOR", value="Error")
+            new_node.children = [tipo_node, valor_node]
+        else:
+            tipo = tabla_simbolos[var_name]["tipo"]
+            valor = tabla_simbolos[var_name]["valor"]
+            new_node = Node("VAR", value=f"{var_name} = {valor}")
+            tipo_node = Node("TIPO", value=tipo)
+            valor_node = Node("VALOR", value=valor)
+            new_node.children = [tipo_node, valor_node]
+    
+    else:
+        new_node = Node(original.type, value=original.value)
+    
+    for child in original.children:
+        new_child = decorar_nodo(child, contexto)
+        new_node.children.append(new_child)
+    
+    return new_node
+
+def generar_arbol_semantico_decorado(sintactico_root):
+    contexto = {}
+    sem_tree = decorar_nodo(sintactico_root, contexto)
+    return sem_tree
+
+def generar_arbol_semantico(dot_root):
+    dot = Digraph(format="png")
+    dot.attr(rankdir='TB', ordering='out')
+    
+    def recorrer(n, padre_id=None):
+        n_id = str(id(n))
+        label = n.type
+        if n.value is not None:
+            label += f"\n{n.value}"
+        dot.node(n_id, label, shape="box", style="filled", fillcolor="lightblue")
+        if padre_id:
+            dot.edge(padre_id, n_id)
+        for child in n.children:
+            recorrer(child, n_id)
+    
+    recorrer(dot_root)
+    dot.render('arbol_semantico', format='png', cleanup=True)
+    return dot
+
 
 # ---------------------- FUNCIONES DEL MENÚ ----------------------
 def ingreso_datos():
@@ -269,24 +359,88 @@ def sintactico():
     print("--------------------------------------------------")
     print("\t--- Análisis sintáctico en árbol ---")
     try:
-        prueba_sintactica(code)  # Función que genera el árbol sintáctico
+        prueba_sintactica(code)  
         print("Análisis sintáctico exitoso.")
     except Exception as e:
         print(f"Error de sintaxis: {e}")
     print("--------------------------------------------------")
 
 
-def analizador_semantico():
+def analizador_semantico(code):
     print("--------------------------------------------------")
-    print("\t--- Analizador Semántico ---")
-   # ejecutar_analizador_semantico(code)  # Función que analiza semánticamente el código
+    print("\t--- Análisis Semántico en árbol ---")
+    gram = parser.parse(code)
+    if not gram:
+        print("Error de sintaxis. No se puede realizar el análisis semántico.")
+        return
+    semantico_root = generar_arbol_semantico_decorado(gram)
+    arbol_semantico = generar_arbol_semantico(semantico_root)
+    arbol_semantico.render('arbol_semantico', format='png', cleanup=True)
+    print("Árbol semántico generado y guardado como 'arbol_semantico.png'.")
+    try:
+        os.startfile("arbol_semantico.png")
+    except AttributeError:
+        os.system("xdg-open arbol_semantico.png")
     print("--------------------------------------------------")
+
 
 def codigo_intermedio():
     print("--------------------------------------------------")
-    print("\t--- Código Intermedio ---")
-    #generar_codigo_intermedio(code)  # Función que genera código intermedio
+    print("\t--- Generando Código Intermedio ---")
     print("--------------------------------------------------")
+    
+    temp_count = 1  # Contador para las variables temporales
+    variable_map = {}  # Mapa para asociar las variables originales con las temporales
+    lines = code.splitlines()  # Separamos el código ingresado en líneas
+
+    for line in lines:
+        print(f"Procesando: {line.strip()}")
+
+        # Si la línea declara una variable (ejemplo: int x;)
+        if "int" in line:
+            # Esto solo es una declaración, no hacemos nada en este punto
+            continue
+        
+        # Verificar si es una asignación simple (x = 10;)
+        if "=" in line and "+" not in line and "-" not in line and "*" not in line and "/" not in line:
+            var, valor = line.split("=")
+            var = var.strip()
+            valor = int(valor.strip().replace(";", ""))  # Eliminar el punto y coma y convertir a entero
+            # Asignamos la variable temporal t1, t2, t3...
+            temp_var = f"t{temp_count}"
+            variable_map[var] = temp_var  # Guardamos la relación de la variable original con la temporal
+            print(f"{temp_var} = {valor}")  # Imprimimos la asignación de la temporal
+            temp_count += 1  # Incrementamos el contador de variables temporales
+
+        # Verificar si es una operación aritmética (x + y)
+        elif "+" in line or "-" in line or "*" in line or "/" in line:
+            var, operacion = line.split("=")
+            var = var.strip()
+            operands = operacion.strip().split()
+
+            # Verificar que tengamos las variables de los operandos (por ejemplo, x + y)
+            if len(operands) == 3:
+                op1 = operands[0].strip()
+                op2 = operands[2].strip()
+                op = operands[1].strip()
+
+                # Si la variable ya tiene una temporal asignada, la usamos
+                temp1 = variable_map.get(op1, op1)  # Si op1 es una variable, usamos su temporal
+                temp2 = variable_map.get(op2, op2)  # Si op2 es una variable, usamos su temporal
+
+                # Generamos la variable temporal t1, t2, t3...
+                t = f"t{temp_count}"
+                temp_count += 1  # Incrementamos el contador de variables temporales
+
+                # Imprimimos la operación con las variables temporales
+                print(f"{t} = {temp1} {op} {temp2}")
+                
+                # Asignamos el resultado de la operación a la variable original
+                variable_map[var] = t  # Guardamos la relación de la variable original con la temporal
+                print(f"{var} = {t}")
+
+    print("--------------------------------------------------")
+
 
 def salir():
     print("\t--- Feliz Día ---")
@@ -298,7 +452,7 @@ opciones = {
     "2": lexico,
     "3": sintactico,
     "4": mostrar_tabla_simbolos,
-    "5": analizador_semantico,
+    "5": lambda: analizador_semantico(code),
     "6": codigo_intermedio,
     "7": salir
 }
