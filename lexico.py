@@ -394,116 +394,130 @@ def codigo_intermedio():
     lines = code.splitlines()  # Separamos el código ingresado en líneas
 
     for line in lines:
-        print(f"Procesando: {line.strip()}")
-
-        # Si la línea declara una variable (ejemplo: int x;)
-        if "int" in line:
-            # Esto solo es una declaración, no hacemos nada en este punto
+        line = line.strip()
+        if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
             continue
-        
-        # Verificar si es una asignación simple (x = 10;)
-        if "=" in line and "+" not in line and "-" not in line and "*" not in line and "/" not in line:
-            var, valor = line.split("=")
+
+        # Procesar declaraciones
+        if "int" in line or "char" in line:
+            var = line.split()[1].replace(";", "")
+            variable_map[var] = None
+            continue
+
+        # Procesar asignaciones y operaciones
+        if "=" in line:
+            var, expr = line.split("=")
             var = var.strip()
-            valor = int(valor.strip().replace(";", ""))  # Eliminar el punto y coma y convertir a entero
-            # Asignamos la variable temporal t1, t2, t3...
-            temp_var = f"t{temp_count}"
-            variable_map[var] = temp_var  # Guardamos la relación de la variable original con la temporal
-            print(f"{temp_var} = {valor}")  # Imprimimos la asignación de la temporal
-            temp_count += 1  # Incrementamos el contador de variables temporales
+            expr = expr.strip().replace(";", "")
 
-        # Verificar si es una operación aritmética (x + y)
-        elif "+" in line or "-" in line or "*" in line or "/" in line:
-            var, operacion = line.split("=")
-            var = var.strip()
-            operands = operacion.strip().split()
+            # Si es una asignación directa
+            if expr.isdigit():
+                print(f"{var} = {expr}")
+                variable_map[var] = expr
+            else:
+                # Procesar operaciones
+                tokens = re.split(r'(\+|\-|\*|/)', expr)
+                temp_vars = []
+                for token in tokens:
+                    token = token.strip()
+                    if token.isdigit() or token in variable_map:
+                        temp_vars.append(token)
+                    elif token in "+-*/":
+                        temp_vars.append(token)
 
-            # Verificar que tengamos las variables de los operandos (por ejemplo, x + y)
-            if len(operands) == 3:
-                op1 = operands[0].strip()
-                op2 = operands[2].strip()
-                op = operands[1].strip()
+                # Generar código intermedio para operaciones
+                while len(temp_vars) > 1:
+                    op1 = temp_vars.pop(0)
+                    operator = temp_vars.pop(0)
+                    op2 = temp_vars.pop(0)
+                    temp_var = f"t{temp_count}"
+                    temp_count += 1
+                    print(f"{temp_var} = {op1} {operator} {op2}")
+                    print(f"Procesando {temp_var}...")
+                    temp_vars.insert(0, temp_var)
 
-                # Si la variable ya tiene una temporal asignada, la usamos
-                temp1 = variable_map.get(op1, op1)  # Si op1 es una variable, usamos su temporal
-                temp2 = variable_map.get(op2, op2)  # Si op2 es una variable, usamos su temporal
-
-                # Generamos la variable temporal t1, t2, t3...
-                t = f"t{temp_count}"
-                temp_count += 1  # Incrementamos el contador de variables temporales
-
-                # Imprimimos la operación con las variables temporales
-                print(f"{t} = {temp1} {op} {temp2}")
-                
-                # Asignamos el resultado de la operación a la variable original
-                variable_map[var] = t  # Guardamos la relación de la variable original con la temporal
-                print(f"{var} = {t}")
+                # Asignar el resultado final a la variable
+                print(f"{var} = {temp_vars[0]}")
+                variable_map[var] = temp_vars[0]
 
     print("--------------------------------------------------")
 
 def generador_ensamblador():
-    print("--------------------------------------------------")
-    print("\t--- Generador de Código Ensamblador ---")
-    print("--------------------------------------------------")
-    
-    temp_count = 1  # Contador para las variables temporales
-    variable_map = {}  # Mapa para asociar las variables originales con las temporales
-    lines = code.splitlines()  # Separamos el código ingresado en líneas
+                print("--------------------------------------------------")
+                print("\t--- Generador de Código Ensamblador ---")
+                print("--------------------------------------------------")
+                
+                temp_count = 1  # Contador para las variables temporales
+                variable_map = {}  # Mapa para asociar las variables originales con las temporales
+                lines = code.splitlines()  # Separamos el código ingresado en líneas
 
-    ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
+                ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
 
-    for line in lines:
-        print(f"Procesando: {line.strip()}")
+                for line in lines:
+                    line = line.strip()
+                    if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
+                        continue
 
-        # Si la línea declara una variable (ejemplo: int x;)
-        if "int" in line:
-            var = line.split()[1].replace(";", "")
-            ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
-            continue
-        
-        # Verificar si es una asignación simple (x = 10;)
-        if "=" in line and "+" not in line and "-" not in line and "*" not in line and "/" not in line:
-            var, valor = line.split("=")
-            var = var.strip()
-            valor = int(valor.strip().replace(";", ""))  # Eliminar el punto y coma y convertir a entero
-            ensamblador.append(f"MOV {var}, {valor}")  # Asignación en ensamblador
-            variable_map[var] = var  # Guardar la variable en el mapa
-            continue
+                    # Procesar declaraciones
+                    if "int" in line or "char" in line:
+                        var = line.split()[1].replace(";", "")
+                        ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
+                        variable_map[var] = var
+                        continue
 
-        # Verificar si es una operación aritmética (x + y)
-        elif "+" in line or "-" in line or "*" in line or "/" in line:
-            var, operacion = line.split("=")
-            var = var.strip()
-            operands = operacion.strip().split()
+                    # Procesar asignaciones y operaciones
+                    if "=" in line:
+                        var, expr = line.split("=")
+                        var = var.strip()
+                        expr = expr.strip().replace(";", "")
 
-            if len(operands) == 3:
-                op1 = operands[0].strip()
-                op2 = operands[2].strip()
-                op = operands[1].strip()
+                        # Si es una asignación directa
+                        if expr.isdigit():
+                            ensamblador.append(f"MOV {var}, {expr}")
+                            variable_map[var] = var
+                        else:
+                            # Procesar operaciones
+                            tokens = re.split(r'(\+|\-|\*|/)', expr)
+                            temp_vars = []
+                            for token in tokens:
+                                token = token.strip()
+                                if token.isdigit() or token in variable_map:
+                                    temp_vars.append(token)
+                                elif token in "+-*/":
+                                    temp_vars.append(token)
 
-                temp1 = variable_map.get(op1, op1)
-                temp2 = variable_map.get(op2, op2)
+                            # Generar ensamblador para operaciones
+                            while len(temp_vars) > 1:
+                                op1 = temp_vars.pop(0)
+                                operator = temp_vars.pop(0)
+                                op2 = temp_vars.pop(0)
+                                temp_var = f"t{temp_count}"
+                                temp_count += 1
 
-                if op == "+":
-                    ensamblador.append(f"MOV AX, {temp1}")
-                    ensamblador.append(f"ADD AX, {temp2}")
-                elif op == "-":
-                    ensamblador.append(f"MOV AX, {temp1}")
-                    ensamblador.append(f"SUB AX, {temp2}")
-                elif op == "*":
-                    ensamblador.append(f"MOV AX, {temp1}")
-                    ensamblador.append(f"MUL {temp2}")
-                elif op == "/":
-                    ensamblador.append(f"MOV AX, {temp1}")
-                    ensamblador.append(f"DIV {temp2}")
+                                if operator == "+":
+                                    ensamblador.append(f"MOV AX, {op1}")
+                                    ensamblador.append(f"ADD AX, {op2}")
+                                elif operator == "-":
+                                    ensamblador.append(f"MOV AX, {op1}")
+                                    ensamblador.append(f"SUB AX, {op2}")
+                                elif operator == "*":
+                                    ensamblador.append(f"MOV AX, {op1}")
+                                    ensamblador.append(f"MUL {op2}")
+                                elif operator == "/":
+                                    ensamblador.append(f"MOV AX, {op1}")
+                                    ensamblador.append(f"DIV {op2}")
 
-                ensamblador.append(f"MOV {var}, AX")  # Guardar el resultado en la variable original
-                variable_map[var] = var  # Actualizar el mapa con la variable original
+                                ensamblador.append(f"MOV {temp_var}, AX")
+                                temp_vars.insert(0, temp_var)
 
-    print("\n--- Código Ensamblador Generado ---")
-    for instr in ensamblador:
-        print(instr)
-    print("--------------------------------------------------")
+                            # Asignar el resultado final a la variable
+                            ensamblador.append(f"MOV {var}, {temp_vars[0]}")
+                            variable_map[var] = var
+
+                print("\n--- Código Ensamblador Generado ---")
+                for instr in ensamblador:
+                    print(instr)
+                print("--------------------------------------------------")
 
 def salir():
     print("\t--- Feliz Día ---")
@@ -541,3 +555,4 @@ if __name__ == "__main__":
             opciones[opcion]()
         else:
             print("Opción incorrecta, por favor intente nuevamente.")
+#--------------------------------------------------
