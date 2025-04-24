@@ -6,7 +6,7 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'leftSUMRESleftMULDIVAND CHAR DIV ELSE IF IGUAL INT LLAVE_L LLAVE_R MAYOR MENOR MUL NOT NUM OR PAR_L PAR_R PYC RES STRING SUM VAR WHILEprograma : declaracionesdeclaraciones : declaraciones declaracion\n                     | declaraciones asignacion\n                     | declaraciones if_statement\n                     | declaraciones while_statement\n                     | declaracion\n                     | asignacion\n                     | if_statement\n                     | while_statementdeclaracion : INT VAR PYC\n                   | CHAR VAR PYCasignacion : VAR IGUAL expresion PYCif_statement : IF PAR_L expresion PAR_R bloque ELSE bloquewhile_statement : WHILE PAR_L expresion PAR_R bloquebloque : LLAVE_L declaraciones LLAVE_Rexpresion : expresion SUM expresion\n                 | expresion RES expresion\n                 | expresion MUL expresion\n                 | expresion DIV expresionexpresion : expresion MAYOR expresion\n                 | expresion MENOR expresionexpresion : NUMexpresion : VAR'
+_lr_signature = 'leftSUMRESleftMULDIVAND CHAR DIV ELSE IF IGUAL INT LLAVE_L LLAVE_R MAYOR MENOR MUL NOT NUM OR PAR_L PAR_R PYC RES STRING SUM VAR WHILEprograma : declaracionesdeclaraciones : declaraciones declaracion\n| declaraciones asignacion\n| declaraciones if_statement\n| declaraciones while_statement\n| declaracion\n| asignacion\n| if_statement\n| while_statementdeclaracion : INT VAR PYC\n| CHAR VAR PYCasignacion : VAR IGUAL expresion PYCif_statement : IF PAR_L expresion PAR_R bloque ELSE bloquewhile_statement : WHILE PAR_L expresion PAR_R bloquebloque : LLAVE_L declaraciones LLAVE_Rexpresion : expresion SUM expresion\n| expresion RES expresion\n| expresion MUL expresion\n| expresion DIV expresionexpresion : expresion MAYOR expresion\n| expresion MENOR expresionexpresion : NUMexpresion : VAR'
     
 _lr_action_items = {'INT':([0,2,3,4,5,6,12,13,14,15,21,25,28,44,45,47,48,49,],[7,7,-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,7,-14,7,-13,-15,]),'CHAR':([0,2,3,4,5,6,12,13,14,15,21,25,28,44,45,47,48,49,],[9,9,-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,9,-14,9,-13,-15,]),'VAR':([0,2,3,4,5,6,7,9,12,13,14,15,17,19,20,21,25,28,29,30,31,32,33,34,44,45,47,48,49,],[8,8,-6,-7,-8,-9,16,18,-2,-3,-4,-5,22,22,22,-10,-11,-12,22,22,22,22,22,22,8,-14,8,-13,-15,]),'IF':([0,2,3,4,5,6,12,13,14,15,21,25,28,44,45,47,48,49,],[10,10,-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,10,-14,10,-13,-15,]),'WHILE':([0,2,3,4,5,6,12,13,14,15,21,25,28,44,45,47,48,49,],[11,11,-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,11,-14,11,-13,-15,]),'$end':([1,2,3,4,5,6,12,13,14,15,21,25,28,45,48,49,],[0,-1,-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,-14,-13,-15,]),'LLAVE_R':([3,4,5,6,12,13,14,15,21,25,28,45,47,48,49,],[-6,-7,-8,-9,-2,-3,-4,-5,-10,-11,-12,-14,49,-13,-15,]),'IGUAL':([8,],[17,]),'PAR_L':([10,11,],[19,20,]),'PYC':([16,18,22,23,24,37,38,39,40,41,42,],[21,25,-23,28,-22,-16,-17,-18,-19,-20,-21,]),'NUM':([17,19,20,29,30,31,32,33,34,],[24,24,24,24,24,24,24,24,24,]),'SUM':([22,23,24,26,27,37,38,39,40,41,42,],[-23,29,-22,29,29,-16,-17,-18,-19,29,29,]),'RES':([22,23,24,26,27,37,38,39,40,41,42,],[-23,30,-22,30,30,-16,-17,-18,-19,30,30,]),'MUL':([22,23,24,26,27,37,38,39,40,41,42,],[-23,31,-22,31,31,31,31,-18,-19,31,31,]),'DIV':([22,23,24,26,27,37,38,39,40,41,42,],[-23,32,-22,32,32,32,32,-18,-19,32,32,]),'MAYOR':([22,23,24,26,27,37,38,39,40,41,42,],[-23,33,-22,33,33,-16,-17,-18,-19,33,33,]),'MENOR':([22,23,24,26,27,37,38,39,40,41,42,],[-23,34,-22,34,34,-16,-17,-18,-19,34,34,]),'PAR_R':([22,24,26,27,37,38,39,40,41,42,],[-23,-22,35,36,-16,-17,-18,-19,-20,-21,]),'LLAVE_L':([35,36,46,],[44,44,44,]),'ELSE':([43,49,],[46,-15,]),}
 
@@ -27,27 +27,27 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> programa","S'",1,None,None,None),
-  ('programa -> declaraciones','programa',1,'p_programa','lexico.py',79),
-  ('declaraciones -> declaraciones declaracion','declaraciones',2,'p_declaraciones','lexico.py',84),
-  ('declaraciones -> declaraciones asignacion','declaraciones',2,'p_declaraciones','lexico.py',85),
-  ('declaraciones -> declaraciones if_statement','declaraciones',2,'p_declaraciones','lexico.py',86),
-  ('declaraciones -> declaraciones while_statement','declaraciones',2,'p_declaraciones','lexico.py',87),
-  ('declaraciones -> declaracion','declaraciones',1,'p_declaraciones','lexico.py',88),
-  ('declaraciones -> asignacion','declaraciones',1,'p_declaraciones','lexico.py',89),
-  ('declaraciones -> if_statement','declaraciones',1,'p_declaraciones','lexico.py',90),
-  ('declaraciones -> while_statement','declaraciones',1,'p_declaraciones','lexico.py',91),
-  ('declaracion -> INT VAR PYC','declaracion',3,'p_declaracion','lexico.py',98),
-  ('declaracion -> CHAR VAR PYC','declaracion',3,'p_declaracion','lexico.py',99),
-  ('asignacion -> VAR IGUAL expresion PYC','asignacion',4,'p_asignacion','lexico.py',105),
-  ('if_statement -> IF PAR_L expresion PAR_R bloque ELSE bloque','if_statement',7,'p_if_else_statement','lexico.py',114),
-  ('while_statement -> WHILE PAR_L expresion PAR_R bloque','while_statement',5,'p_while_statement','lexico.py',119),
-  ('bloque -> LLAVE_L declaraciones LLAVE_R','bloque',3,'p_bloque','lexico.py',124),
-  ('expresion -> expresion SUM expresion','expresion',3,'p_expresion','lexico.py',128),
-  ('expresion -> expresion RES expresion','expresion',3,'p_expresion','lexico.py',129),
-  ('expresion -> expresion MUL expresion','expresion',3,'p_expresion','lexico.py',130),
-  ('expresion -> expresion DIV expresion','expresion',3,'p_expresion','lexico.py',131),
-  ('expresion -> expresion MAYOR expresion','expresion',3,'p_expresion_relacional','lexico.py',136),
-  ('expresion -> expresion MENOR expresion','expresion',3,'p_expresion_relacional','lexico.py',137),
-  ('expresion -> NUM','expresion',1,'p_expresion_numero','lexico.py',142),
-  ('expresion -> VAR','expresion',1,'p_expresion_var','lexico.py',147),
+  ('programa -> declaraciones','programa',1,'p_programa','lexico.py',80),
+  ('declaraciones -> declaraciones declaracion','declaraciones',2,'p_declaraciones','lexico.py',85),
+  ('declaraciones -> declaraciones asignacion','declaraciones',2,'p_declaraciones','lexico.py',86),
+  ('declaraciones -> declaraciones if_statement','declaraciones',2,'p_declaraciones','lexico.py',87),
+  ('declaraciones -> declaraciones while_statement','declaraciones',2,'p_declaraciones','lexico.py',88),
+  ('declaraciones -> declaracion','declaraciones',1,'p_declaraciones','lexico.py',89),
+  ('declaraciones -> asignacion','declaraciones',1,'p_declaraciones','lexico.py',90),
+  ('declaraciones -> if_statement','declaraciones',1,'p_declaraciones','lexico.py',91),
+  ('declaraciones -> while_statement','declaraciones',1,'p_declaraciones','lexico.py',92),
+  ('declaracion -> INT VAR PYC','declaracion',3,'p_declaracion','lexico.py',99),
+  ('declaracion -> CHAR VAR PYC','declaracion',3,'p_declaracion','lexico.py',100),
+  ('asignacion -> VAR IGUAL expresion PYC','asignacion',4,'p_asignacion','lexico.py',137),
+  ('if_statement -> IF PAR_L expresion PAR_R bloque ELSE bloque','if_statement',7,'p_if_else_statement','lexico.py',153),
+  ('while_statement -> WHILE PAR_L expresion PAR_R bloque','while_statement',5,'p_while_statement','lexico.py',158),
+  ('bloque -> LLAVE_L declaraciones LLAVE_R','bloque',3,'p_bloque','lexico.py',166),
+  ('expresion -> expresion SUM expresion','expresion',3,'p_expresion','lexico.py',170),
+  ('expresion -> expresion RES expresion','expresion',3,'p_expresion','lexico.py',171),
+  ('expresion -> expresion MUL expresion','expresion',3,'p_expresion','lexico.py',172),
+  ('expresion -> expresion DIV expresion','expresion',3,'p_expresion','lexico.py',173),
+  ('expresion -> expresion MAYOR expresion','expresion',3,'p_expresion_relacional','lexico.py',178),
+  ('expresion -> expresion MENOR expresion','expresion',3,'p_expresion_relacional','lexico.py',179),
+  ('expresion -> NUM','expresion',1,'p_expresion_numero','lexico.py',184),
+  ('expresion -> VAR','expresion',1,'p_expresion_var','lexico.py',189),
 ]

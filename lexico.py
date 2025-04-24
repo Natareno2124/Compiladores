@@ -441,6 +441,69 @@ def codigo_intermedio():
 
     print("--------------------------------------------------")
 
+def generador_ensamblador():
+    print("--------------------------------------------------")
+    print("\t--- Generador de Código Ensamblador ---")
+    print("--------------------------------------------------")
+    
+    temp_count = 1  # Contador para las variables temporales
+    variable_map = {}  # Mapa para asociar las variables originales con las temporales
+    lines = code.splitlines()  # Separamos el código ingresado en líneas
+
+    ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
+
+    for line in lines:
+        print(f"Procesando: {line.strip()}")
+
+        # Si la línea declara una variable (ejemplo: int x;)
+        if "int" in line:
+            var = line.split()[1].replace(";", "")
+            ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
+            continue
+        
+        # Verificar si es una asignación simple (x = 10;)
+        if "=" in line and "+" not in line and "-" not in line and "*" not in line and "/" not in line:
+            var, valor = line.split("=")
+            var = var.strip()
+            valor = int(valor.strip().replace(";", ""))  # Eliminar el punto y coma y convertir a entero
+            ensamblador.append(f"MOV {var}, {valor}")  # Asignación en ensamblador
+            variable_map[var] = var  # Guardar la variable en el mapa
+            continue
+
+        # Verificar si es una operación aritmética (x + y)
+        elif "+" in line or "-" in line or "*" in line or "/" in line:
+            var, operacion = line.split("=")
+            var = var.strip()
+            operands = operacion.strip().split()
+
+            if len(operands) == 3:
+                op1 = operands[0].strip()
+                op2 = operands[2].strip()
+                op = operands[1].strip()
+
+                temp1 = variable_map.get(op1, op1)
+                temp2 = variable_map.get(op2, op2)
+
+                if op == "+":
+                    ensamblador.append(f"MOV AX, {temp1}")
+                    ensamblador.append(f"ADD AX, {temp2}")
+                elif op == "-":
+                    ensamblador.append(f"MOV AX, {temp1}")
+                    ensamblador.append(f"SUB AX, {temp2}")
+                elif op == "*":
+                    ensamblador.append(f"MOV AX, {temp1}")
+                    ensamblador.append(f"MUL {temp2}")
+                elif op == "/":
+                    ensamblador.append(f"MOV AX, {temp1}")
+                    ensamblador.append(f"DIV {temp2}")
+
+                ensamblador.append(f"MOV {var}, AX")  # Guardar el resultado en la variable original
+                variable_map[var] = var  # Actualizar el mapa con la variable original
+
+    print("\n--- Código Ensamblador Generado ---")
+    for instr in ensamblador:
+        print(instr)
+    print("--------------------------------------------------")
 
 def salir():
     print("\t--- Feliz Día ---")
@@ -448,14 +511,15 @@ def salir():
     exit()
 
 opciones = {
-    "1": ingreso_datos,
-    "2": lexico,
-    "3": sintactico,
-    "4": mostrar_tabla_simbolos,
-    "5": lambda: analizador_semantico(code),
-    "6": codigo_intermedio,
-    "7": salir
-}
+                "1": ingreso_datos,
+                "2": lexico,
+                "3": sintactico,
+                "4": mostrar_tabla_simbolos,
+                "5": lambda: analizador_semantico(code),
+                "6": codigo_intermedio,
+                "7": generador_ensamblador,
+                "8": salir
+            }
 
 code = ""
 
@@ -468,7 +532,9 @@ if __name__ == "__main__":
         print("4. Tabla de símbolos")
         print("5. Analizador Semántico")
         print("6. Código intermedio")
-        print("7. Salir")
+        print("7. Generador de Código Ensamblador")
+        print("8. Salir")
+        print("--------------------------------------------------")
 
         opcion = input("Escoja una opción: ")
         if opcion in opciones:
