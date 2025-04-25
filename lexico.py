@@ -384,6 +384,7 @@ def analizador_semantico(code):
     print("--------------------------------------------------")
 
 
+# Modificación del generador de código intermedio para respetar la jerarquía de operaciones
 def codigo_intermedio():
     print("--------------------------------------------------")
     print("\t--- Generando Código Intermedio ---")
@@ -391,6 +392,44 @@ def codigo_intermedio():
     
     temp_count = 1  # Contador para las variables temporales
     variable_map = {}  # Mapa para asociar las variables originales con las temporales
+
+    def procesar_expresion(expr):
+        nonlocal temp_count
+        tokens = re.split(r'(\+|\-|\*|/)', expr)
+        operadores = []
+        operandos = []
+
+        # Separar operandos y operadores
+        for token in tokens:
+            token = token.strip()
+            if token.isdigit() or token in variable_map:
+                operandos.append(token)
+            elif token in "+-*/":
+                while (operadores and
+                       precedence[operadores[-1]] >= precedence[token]):
+                    op2 = operandos.pop()
+                    op1 = operandos.pop()
+                    operador = operadores.pop()
+                    temp_var = f"t{temp_count}"
+                    temp_count += 1
+                    print(f"{temp_var} = {op1} {operador} {op2}")
+                    operandos.append(temp_var)
+                operadores.append(token)
+
+        # Procesar los operadores restantes
+        while operadores:
+            op2 = operandos.pop()
+            op1 = operandos.pop()
+            operador = operadores.pop()
+            temp_var = f"t{temp_count}"
+            temp_count += 1
+            print(f"{temp_var} = {op1} {operador} {op2}")
+            operandos.append(temp_var)
+
+        return operandos[0]
+
+    precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
+
     lines = code.splitlines()  # Separamos el código ingresado en líneas
 
     for line in lines:
@@ -410,114 +449,117 @@ def codigo_intermedio():
             var = var.strip()
             expr = expr.strip().replace(";", "")
 
-            # Si es una asignación directa
-            if expr.isdigit():
-                print(f"{var} = {expr}")
-                variable_map[var] = expr
-            else:
-                # Procesar operaciones
-                tokens = re.split(r'(\+|\-|\*|/)', expr)
-                temp_vars = []
-                for token in tokens:
-                    token = token.strip()
-                    if token.isdigit() or token in variable_map:
-                        temp_vars.append(token)
-                    elif token in "+-*/":
-                        temp_vars.append(token)
-
-                # Generar código intermedio para operaciones
-                while len(temp_vars) > 1:
-                    op1 = temp_vars.pop(0)
-                    operator = temp_vars.pop(0)
-                    op2 = temp_vars.pop(0)
-                    temp_var = f"t{temp_count}"
-                    temp_count += 1
-                    print(f"{temp_var} = {op1} {operator} {op2}")
-                    print(f"Procesando {temp_var}...")
-                    temp_vars.insert(0, temp_var)
-
-                # Asignar el resultado final a la variable
-                print(f"{var} = {temp_vars[0]}")
-                variable_map[var] = temp_vars[0]
+            # Procesar la expresión respetando la jerarquía
+            resultado = procesar_expresion(expr)
+            print(f"{var} = {resultado}")
+            variable_map[var] = resultado
 
     print("--------------------------------------------------")
 
+# Modificación del generador de código ensamblador para respetar la jerarquía de operaciones
 def generador_ensamblador():
-                print("--------------------------------------------------")
-                print("\t--- Generador de Código Ensamblador ---")
-                print("--------------------------------------------------")
-                
-                temp_count = 1  # Contador para las variables temporales
-                variable_map = {}  # Mapa para asociar las variables originales con las temporales
-                lines = code.splitlines()  # Separamos el código ingresado en líneas
+    print("--------------------------------------------------")
+    print("\t--- Generador de Código Ensamblador ---")
+    print("--------------------------------------------------")
+    
+    temp_count = 1  # Contador para las variables temporales
+    variable_map = {}  # Mapa para asociar las variables originales con las temporales
 
-                ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
+    def procesar_expresion_ensamblador(expr):
+        nonlocal temp_count
+        tokens = re.split(r'(\+|\-|\*|/)', expr)
+        operadores = []
+        operandos = []
 
-                for line in lines:
-                    line = line.strip()
-                    if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
-                        continue
+        # Separar operandos y operadores
+        for token in tokens:
+            token = token.strip()
+            if token.isdigit() or token in variable_map:
+                operandos.append(token)
+            elif token in "+-*/":
+                while (operadores and
+                       precedence[operadores[-1]] >= precedence[token]):
+                    op2 = operandos.pop()
+                    op1 = operandos.pop()
+                    operador = operadores.pop()
+                    temp_var = f"t{temp_count}"
+                    temp_count += 1
 
-                    # Procesar declaraciones
-                    if "int" in line or "char" in line:
-                        var = line.split()[1].replace(";", "")
-                        ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
-                        variable_map[var] = var
-                        continue
+                    if operador == "+":
+                        ensamblador.append(f"MOV AX, {op1}")
+                        ensamblador.append(f"ADD AX, {op2}")
+                    elif operador == "-":
+                        ensamblador.append(f"MOV AX, {op1}")
+                        ensamblador.append(f"SUB AX, {op2}")
+                    elif operador == "*":
+                        ensamblador.append(f"MOV AX, {op1}")
+                        ensamblador.append(f"MUL {op2}")
+                    elif operador == "/":
+                        ensamblador.append(f"MOV AX, {op1}")
+                        ensamblador.append(f"DIV {op2}")
 
-                    # Procesar asignaciones y operaciones
-                    if "=" in line:
-                        var, expr = line.split("=")
-                        var = var.strip()
-                        expr = expr.strip().replace(";", "")
+                    ensamblador.append(f"MOV {temp_var}, AX")
+                    operandos.append(temp_var)
+                operadores.append(token)
 
-                        # Si es una asignación directa
-                        if expr.isdigit():
-                            ensamblador.append(f"MOV {var}, {expr}")
-                            variable_map[var] = var
-                        else:
-                            # Procesar operaciones
-                            tokens = re.split(r'(\+|\-|\*|/)', expr)
-                            temp_vars = []
-                            for token in tokens:
-                                token = token.strip()
-                                if token.isdigit() or token in variable_map:
-                                    temp_vars.append(token)
-                                elif token in "+-*/":
-                                    temp_vars.append(token)
+        # Procesar los operadores restantes
+        while operadores:
+            op2 = operandos.pop()
+            op1 = operandos.pop()
+            operador = operadores.pop()
+            temp_var = f"t{temp_count}"
+            temp_count += 1
 
-                            # Generar ensamblador para operaciones
-                            while len(temp_vars) > 1:
-                                op1 = temp_vars.pop(0)
-                                operator = temp_vars.pop(0)
-                                op2 = temp_vars.pop(0)
-                                temp_var = f"t{temp_count}"
-                                temp_count += 1
+            if operador == "+":
+                ensamblador.append(f"MOV AX, {op1}")
+                ensamblador.append(f"ADD AX, {op2}")
+            elif operador == "-":
+                ensamblador.append(f"MOV AX, {op1}")
+                ensamblador.append(f"SUB AX, {op2}")
+            elif operador == "*":
+                ensamblador.append(f"MOV AX, {op1}")
+                ensamblador.append(f"MUL {op2}")
+            elif operador == "/":
+                ensamblador.append(f"MOV AX, {op1}")
+                ensamblador.append(f"DIV {op2}")
 
-                                if operator == "+":
-                                    ensamblador.append(f"MOV AX, {op1}")
-                                    ensamblador.append(f"ADD AX, {op2}")
-                                elif operator == "-":
-                                    ensamblador.append(f"MOV AX, {op1}")
-                                    ensamblador.append(f"SUB AX, {op2}")
-                                elif operator == "*":
-                                    ensamblador.append(f"MOV AX, {op1}")
-                                    ensamblador.append(f"MUL {op2}")
-                                elif operator == "/":
-                                    ensamblador.append(f"MOV AX, {op1}")
-                                    ensamblador.append(f"DIV {op2}")
+            ensamblador.append(f"MOV {temp_var}, AX")
+            operandos.append(temp_var)
 
-                                ensamblador.append(f"MOV {temp_var}, AX")
-                                temp_vars.insert(0, temp_var)
+        return operandos[0]
 
-                            # Asignar el resultado final a la variable
-                            ensamblador.append(f"MOV {var}, {temp_vars[0]}")
-                            variable_map[var] = var
+    precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
+    ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
 
-                print("\n--- Código Ensamblador Generado ---")
-                for instr in ensamblador:
-                    print(instr)
-                print("--------------------------------------------------")
+    lines = code.splitlines()  # Separamos el código ingresado en líneas
+
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
+            continue
+
+        # Procesar declaraciones
+        if "int" in line or "char" in line:
+            var = line.split()[1].replace(";", "")
+            ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
+            variable_map[var] = var
+            continue
+
+        # Procesar asignaciones y operaciones
+        if "=" in line:
+            var, expr = line.split("=")
+            var = var.strip()
+            expr = expr.strip().replace(";", "")
+
+            # Procesar la expresión respetando la jerarquía
+            resultado = procesar_expresion_ensamblador(expr)
+            ensamblador.append(f"MOV {var}, {resultado}")
+            variable_map[var] = var
+
+    print("\n--- Código Ensamblador Generado ---")
+    for instr in ensamblador:
+        print(instr)
+    print("--------------------------------------------------")
 
 def salir():
     print("\t--- Feliz Día ---")
@@ -555,4 +597,4 @@ if __name__ == "__main__":
             opciones[opcion]()
         else:
             print("Opción incorrecta, por favor intente nuevamente.")
-#--------------------------------------------------
+#--------------------------------------------------------------------
