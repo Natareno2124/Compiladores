@@ -561,6 +561,38 @@ def generador_ensamblador():
         print(instr)
     print("--------------------------------------------------")
 
+def ejecutar_codigo():
+    print("--------------------------------------------------")
+    print("\t--- Ejecución de Código .EXE---")
+    print("--------------------------------------------------")
+    try:
+        gram = parser.parse(code)
+        if not gram:
+            print("Error de sintaxis. No se puede ejecutar el código.")
+            return
+        print("Resultado de ejecución:")
+
+        def recorrer_y_ejecutar(nodo):
+            if nodo.type == "DECLARACION":
+                # Ya manejado en la declaración
+                pass
+            elif nodo.type == "ASIGNACION":
+                var_name = nodo.children[0].value
+                valor = evaluar_expresion(nodo.children[1], tabla_simbolos)
+                if var_name in tabla_simbolos:
+                    tabla_simbolos[var_name]["valor"] = valor
+                else:
+                    tabla_simbolos[var_name] = {"tipo": "desconocido", "valor": valor}
+                print(f"{var_name} = {valor}")
+            for child in nodo.children:
+                recorrer_y_ejecutar(child)
+
+        recorrer_y_ejecutar(gram)
+        print("--------------------------------------------------")
+    except Exception as e:
+        print(f"Error durante la ejecución: {e}")
+
+
 def salir():
     print("\t--- Feliz Día ---")
     print("--------------------------------------------------")
@@ -574,7 +606,8 @@ opciones = {
                 "5": lambda: analizador_semantico(code),
                 "6": codigo_intermedio,
                 "7": generador_ensamblador,
-                "8": salir
+                "8": ejecutar_codigo,
+                "9": salir
             }
 
 code = ""
@@ -589,7 +622,8 @@ if __name__ == "__main__":
         print("5. Analizador Semántico")
         print("6. Código intermedio")
         print("7. Generador de Código Ensamblador")
-        print("8. Salir")
+        print("8. Ejecutar Código .EXE")
+        print("9. Salir")
         print("--------------------------------------------------")
 
         opcion = input("Escoja una opción: ")
