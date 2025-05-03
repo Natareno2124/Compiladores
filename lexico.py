@@ -384,14 +384,13 @@ def analizador_semantico(code):
     print("--------------------------------------------------")
 
 
-# Modificación del generador de código intermedio para respetar la jerarquía de operaciones
 def codigo_intermedio():
     print("--------------------------------------------------")
     print("\t--- Generando Código Intermedio ---")
     print("--------------------------------------------------")
     
-    temp_count = 1  # Contador para las variables temporales
-    variable_map = {}  # Mapa para asociar las variables originales con las temporales
+    temp_count = 1  
+    variable_map = {}  
 
     def procesar_expresion(expr):
         nonlocal temp_count
@@ -430,40 +429,39 @@ def codigo_intermedio():
 
     precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
 
-    lines = code.splitlines()  # Separamos el código ingresado en líneas
+    lines = code.splitlines()
 
     for line in lines:
         line = line.strip()
-        if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
+        if not line or line.startswith("//"):  
             continue
 
-        # Procesar declaraciones
+        
         if "int" in line or "char" in line:
             var = line.split()[1].replace(";", "")
             variable_map[var] = None
             continue
 
-        # Procesar asignaciones y operaciones
+        
         if "=" in line:
             var, expr = line.split("=")
             var = var.strip()
             expr = expr.strip().replace(";", "")
 
-            # Procesar la expresión respetando la jerarquía
+            
             resultado = procesar_expresion(expr)
             print(f"{var} = {resultado}")
             variable_map[var] = resultado
 
     print("--------------------------------------------------")
 
-# Modificación del generador de código ensamblador para respetar la jerarquía de operaciones
 def generador_ensamblador():
     print("--------------------------------------------------")
     print("\t--- Generador de Código Ensamblador ---")
     print("--------------------------------------------------")
     
-    temp_count = 1  # Contador para las variables temporales
-    variable_map = {}  # Mapa para asociar las variables originales con las temporales
+    temp_count = 1  
+    variable_map = {}  
 
     def procesar_expresion_ensamblador(expr):
         nonlocal temp_count
@@ -471,7 +469,6 @@ def generador_ensamblador():
         operadores = []
         operandos = []
 
-        # Separar operandos y operadores
         for token in tokens:
             token = token.strip()
             if token.isdigit() or token in variable_map:
@@ -502,7 +499,6 @@ def generador_ensamblador():
                     operandos.append(temp_var)
                 operadores.append(token)
 
-        # Procesar los operadores restantes
         while operadores:
             op2 = operandos.pop()
             op1 = operandos.pop()
@@ -529,23 +525,22 @@ def generador_ensamblador():
         return operandos[0]
 
     precedence = {'+': 1, '-': 1, '*': 2, '/': 2}
-    ensamblador = []  # Lista para almacenar las instrucciones en ensamblador
+    ensamblador = []  
 
-    lines = code.splitlines()  # Separamos el código ingresado en líneas
+    lines = code.splitlines()  
 
     for line in lines:
         line = line.strip()
-        if not line or line.startswith("//"):  # Ignorar líneas vacías o comentarios
+        if not line or line.startswith("//"):  
             continue
 
         # Procesar declaraciones
         if "int" in line or "char" in line:
             var = line.split()[1].replace(";", "")
-            ensamblador.append(f"{var} DW ?")  # Declaración de variable en ensamblador
+            ensamblador.append(f"{var} DW ?")  
             variable_map[var] = var
             continue
 
-        # Procesar asignaciones y operaciones
         if "=" in line:
             var, expr = line.split("=")
             var = var.strip()
